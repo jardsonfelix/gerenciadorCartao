@@ -8,7 +8,7 @@ public class Cartao {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    private Long id;
     @Column(name="numeroCartao")
     private Integer numeroCartao;
     @Column(name="nome")
@@ -20,6 +20,14 @@ public class Cartao {
     private TipoCartaoEnuns tipoCartao;
     @Column(name="emailDoUsuario")
     private String emailDoUsuario;
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public Long getId() {
+        return id;
+    }
 
 
     public Integer getNumeroCartao() {
@@ -42,7 +50,7 @@ public class Cartao {
         return statusAtivo;
     }
 
-    public void setStatusCartao(Boolean statusCartao) {
+    public void setStatusAtivo(Boolean statusCartao) {
         this.statusAtivo = statusCartao;
     }
 
@@ -54,9 +62,6 @@ public class Cartao {
         this.tipoCartao = tipoCartao;
     }
 
-    public int getId() {
-        return id;
-    }
 
     public String getEmailDoUsuario() {
         return emailDoUsuario;

@@ -1,8 +1,11 @@
 package com.urbana_pe.gereciadorCartao.business;
 
+import com.urbana_pe.gereciadorCartao.business.converter.CartaoConverter;
+import com.urbana_pe.gereciadorCartao.business.dtos.CartaoDTO;
 import com.urbana_pe.gereciadorCartao.business.dtos.UsuarioDTO;
 import com.urbana_pe.gereciadorCartao.infrastructure.client.UsuarioClient;
 import com.urbana_pe.gereciadorCartao.infrastructure.entity.Cartao;
+import com.urbana_pe.gereciadorCartao.infrastructure.exception.AccessDeniedCartaoException;
 import com.urbana_pe.gereciadorCartao.infrastructure.exception.ResourceNotFoundException;
 import com.urbana_pe.gereciadorCartao.repository.CartaoRepositoty;
 import org.springframework.stereotype.Service;
@@ -14,22 +17,31 @@ public class CartaoService {
 
     private final CartaoRepositoty cartaoRepositoty;
     private final UsuarioClient usuarioClient;
+    private final CartaoConverter  cartaoConverter;
 
-    public CartaoService(CartaoRepositoty cartaoRepositoty, UsuarioClient usuarioClient) {
+    public CartaoService(CartaoRepositoty cartaoRepositoty, UsuarioClient usuarioClient, CartaoConverter cartaoConverter) {
         this.cartaoRepositoty = cartaoRepositoty;
         this.usuarioClient = usuarioClient;
+        this.cartaoConverter = cartaoConverter;
     }
 
 
-    public Cartao criarCartaoParaUsuario(Cartao cartao) {
-        List<UsuarioDTO> usuarios = usuarioClient.buscarPorEmail(cartao.getEmailDoUsuario());
+    public CartaoDTO criarCartaoParaUsuario(CartaoDTO dto, String email) {
+        List<UsuarioDTO> usuarioDTOs = usuarioClient.buscarPorEmail(email);
 
-        UsuarioDTO usuario = usuarios.stream().findFirst().orElseThrow(
-                ()-> new ResourceNotFoundException("email não encontrado"));
+        UsuarioDTO usuarioDTO = usuarioDTOs.stream()
+                .filter(u -> u.getEmail().equals(email)).findFirst()
+                        .orElseThrow(()-> new ResourceNotFoundException("email não encontrado"));
 
-        cartao.setNome(usuario.getNome());
+        Cartao cartao = new Cartao();
+        cartao.setNumeroCartao(dto.getNumeroCartao());
+        cartao.setNome(usuarioDTO.getNome());
+        cartao.setStatusAtivo(dto.getStatusAtivo());
+        cartao.setTipoCartao(dto.getTipoCartao());
+        cartao.setEmailDoUsuario(email);
 
-        return cartaoRepositoty.save(cartao);
+        Cartao cartaoSalvo = cartaoRepositoty.save(cartao);
+        return cartaoConverter.paraCartaoDTO(cartaoSalvo);
     }
 
     public void deletarCartaoUsuario(Long id, String email){
@@ -42,21 +54,23 @@ public class CartaoService {
         cartaoRepositoty.delete(cartao);
     }
 
-    public List<Cartao> consultarCartoes(){
-        return cartaoRepositoty.findAll();
+    public List<CartaoDTO> consultarCartoes(){
+        List<Cartao> cartoes = cartaoRepositoty.findAll();
+        return cartoes.stream().map(cartaoConverter::paraCartaoDTO).toList();
 
     }
 
-    public Cartao ativarInativarCartao(Long id, String email, boolean novoStatus){
+    public CartaoDTO ativarInativarCartao(Long id, String email, boolean novoStatus){
         Cartao cartao = cartaoRepositoty.findById(id)
                 .orElseThrow(()-> new ResourceNotFoundException("cartao não encontrado"));
 
         if(!cartao.getEmailDoUsuario().equals(email)){
-            throw new ResourceNotFoundException("cartao cadastrado em outro email" + email);
+            throw new AccessDeniedCartaoException("cartao cadastrado em outro email" + email);
         }
 
-        cartao.setStatusCartao(novoStatus);
-        return cartaoRepositoty.save(cartao);
+        cartao.setStatusAtivo(novoStatus);
+        Cartao cartaoSalvo = cartaoRepositoty.save(cartao);
+        return cartaoConverter.paraCartaoDTO(cartaoSalvo);
 
     }
 }
