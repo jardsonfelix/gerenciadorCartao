@@ -75,12 +75,6 @@ public class Cartao {
 
     }
 
-    public Cartao(String nome, Boolean statusAtivo, TipoCartaoEnuns tipoCartao, String emailDoUsuario) {
-        this.numeroCartao = 0;
-        this.nome = nome;
-        this.statusAtivo = statusAtivo;
-        this.tipoCartao = tipoCartao;
-    }
 
     public Cartao(Integer numeroCartao, String nome, Boolean statusAtivo, TipoCartaoEnuns tipoCartao, String emailDoUsuario) {
         this.numeroCartao = numeroCartao;
